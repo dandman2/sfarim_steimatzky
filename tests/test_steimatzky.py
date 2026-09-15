@@ -49,6 +49,24 @@ class HtmlTests(unittest.TestCase):
         self.assertTrue(more)
         self.assertEqual(books, [{'id': '0123', 'title': 'שפה : מבוא', 'authors': ['יובל אילון']}])
 
+    def test_alternative_title_markup_preserves_original_precedence(self):
+        alternate = SEARCH.replace('product-category-name', 'product-digital-name product-name')
+        self.assertEqual(search_page(alternate), search_page(SEARCH))
+        both = SEARCH.replace('</li>', '<div class="product-name"><a href="/999">Other title</a></div></li>')
+        self.assertEqual(search_page(both), search_page(SEARCH))
+        self.assertEqual(search_page(alternate.replace('>1<', '>0<'))[0], [])
+
+    def test_original_import_title_matches_alternative_card_without_extra_requests(self):
+        title = '[הרואים למרחק 2] רובין הוב - רוצח מלכותי (1998, אסטרולוג)'
+        card = SEARCH.replace('product-category-name', 'product-digital-name product-name')
+        card = card.replace('שפה : מבוא', 'הרואים למרחק 2 רוצח מלכותי').replace('יובל אילון', 'רובין הוב')
+        card = card.replace('0123', '012430083').split('<a class="action next"')[0]
+        browser = Mock()
+        browser.open.return_value = io.BytesIO(card.encode('utf-8'))
+        books = search(browser, title, Event(), 30, 3, Mock())
+        self.assertEqual([book['id'] for book in rank_books(books, title, ['libgen.li'])], ['012430083'])
+        browser.open.assert_called_once()
+
     def test_non_books_and_foreign_links_are_excluded(self):
         data = SEARCH.replace('>1<', '>0<') + SEARCH.replace('href="/0123"', 'href="https://example.com/0123"')
         self.assertEqual(search_page(data)[0], [])

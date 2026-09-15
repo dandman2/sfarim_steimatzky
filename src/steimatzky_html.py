@@ -62,7 +62,7 @@ def search_page(data):
         flags = by_class(card, 'product-is_book')
         if not flags or text(flags[0]) != '1':
             continue
-        title_nodes = by_class(card, 'product-category-name')
+        title_nodes = by_class(card, 'product-category-name') or by_class(card, 'product-name')
         if not title_nodes:
             continue
         title_node = title_nodes[0]
